@@ -79,7 +79,7 @@ Output: `zig-out/bin/mquickjs.wasm`
 
 ## Credits
 
-- [MicroQuickJS](https://bellard.org/quickjs/mquickjs/) by Fabrice Bellard
+- [MicroQuickJS](https://github.com/bellard/mquickjs) by Fabrice Bellard
 - [Zig](https://ziglang.org/) for WASM compilation
 
 ## License
