@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>mquickjs WASM Test</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1a1a2e; color: #eee; }
+        .result { background: #16213e; padding: 10px; margin: 10px 0; border-radius: 4px; }
+        .success { border-left: 3px solid #4ade80; }
+        .error { border-left: 3px solid #f87171; }
+        h1 { color: #818cf8; }
+        pre { margin: 0; }
+        #stats { color: #94a3b8; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <h1>mquickjs WASM Demo</h1>
+    <div id="stats"></div>
+    <div id="output"></div>
+
+    <script type="module">
+        import { createRuntime } from './mquickjs.js';
+
+        const output = document.getElementById('output');
+        const stats = document.getElementById('stats');
+
+        function log(code, result, isError = false) {
+            const div = document.createElement('div');
+            div.className = `result ${isError ? 'error' : 'success'}`;
+            div.innerHTML = `<pre>&gt; ${code}\n${isError ? 'Error: ' : ''}${result}</pre>`;
+            output.appendChild(div);
+        }
+
+        async function main() {
+            const startLoad = performance.now();
+
+            try {
+                const vm = await createRuntime({
+                    maxMemory: 32768,  // 32KB JS heap
+                    wasmPath: './zig-out/bin/mquickjs.wasm'
+                });
+
+                const loadTime = (performance.now() - startLoad).toFixed(2);
+                const mem = vm.getMemoryInfo();
+                stats.textContent = `Loaded in ${loadTime}ms | WASM: ${mem.wasmPages * 64}KB | JS Heap: ${mem.jsHeapSize / 1024}KB`;
+
+                // Test cases - expressions that work in mquickjs-wasm
+                const tests = [
+                    // Basic arithmetic
+                    '1 + 2 * 3',
+                    '(10 * 10) / 4',
+                    '100 % 7',
+                    '2 ** 10',  // 1024
+
+                    // Math functions (built-in)
+                    'Math.floor(Math.sqrt(144))',
+                    'Math.abs(-42)',
+                    'Math.max(1, 5, 3)',
+                    'Math.min(10, 2, 8)',
+                    'Math.round(3.7)',
+
+                    // Ternary & comparisons
+                    '10 > 5 ? 100 : 0',
+                    '(1 === 1) ? 42 : 0',
+                    '5 < 3 ? 1 : 99',
+
+                    // String operations
+                    '"hello".length',
+                    '"hello".toUpperCase().length',
+                    '"abc".charAt(1).charCodeAt(0)',
+                    '"testing".indexOf("t")',
+
+                    // Array operations
+                    '[1, 2, 3].length',
+                    '[10, 20, 30][1]',
+                    '([1, 2, 3]).length + ([4, 5]).length',
+
+                    // Objects
+                    '({a: 1, b: 2}).a + ({a: 1, b: 2}).b',
+                    '({x: 10, y: 5}).x * ({x: 10, y: 5}).y',
+                ];
+
+                for (const code of tests) {
+                    try {
+                        const start = performance.now();
+                        const result = vm.eval(code);
+                        const time = (performance.now() - start).toFixed(3);
+                        log(code, `${result} (${time}ms)`);
+                    } catch (e) {
+                        log(code, e.message, true);
+                    }
+                }
+
+                vm.gc();
+                vm.free();
+
+            } catch (e) {
+                log('initialization', e.message, true);
+            }
+        }
+
+        main();
+    </script>
+</body>
+</html>
