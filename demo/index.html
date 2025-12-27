@@ -599,7 +599,7 @@
         async function loadWasm() {
             try {
                 progressText.textContent = 'LOADING WASM...';
-                const response = await fetch('../zig-out/bin/mquickjs.wasm?v=' + Date.now());
+                const response = await fetch('./mquickjs.wasm');
 
                 progressText.textContent = 'COMPILING...';
                 const bytes = await response.arrayBuffer();
